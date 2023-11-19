@@ -23,6 +23,7 @@
 	},
 	"type": "module",
 	"dependencies": {
+		"uuidv4": "^6.2.13",
 		"ws": "^8.14.2"
 	}
 }
