@@ -9,6 +9,11 @@ export interface SDP {
     sdp: string;
 }
 
+export interface PeerInfo {
+    peer_uuid: string;
+    peer_name: string;
+}
+
 export enum MessageType {
     TEST = "test",
     PRIVATE_UUID = "private-uuid",
@@ -34,7 +39,6 @@ export class ServerConnection {
     }
 
     private notifyListeners(message: ServerMessage) {
-        console.log("Message Recieved: " + message.data);
         this.listeners.forEach( (pair) => {
             const type: MessageType = pair[0];
             const x: (data: string) => any = pair[1];
@@ -45,15 +49,21 @@ export class ServerConnection {
     }
 
     public addMessageListener(type: MessageType, listener: (data: string) => any) {
+        console.log("Recieved " + type);
         this.listeners.add([type, listener]);
     }
 
     public send(type: MessageType, data: string) {
+        console.log("Sending " + type);
         let message: ServerMessage = {
             type: type,
             data: data,
         }
         this.socket?.send(JSON.stringify(message));
+    }
+
+    public close() {
+        this.socket?.close();
     }
 
 }

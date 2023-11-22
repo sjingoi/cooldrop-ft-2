@@ -4,17 +4,20 @@
     import PeersArea from "./PeersArea.svelte";
     import { v4 as uuidv4 } from 'uuid';
 
-    import { ServerConnection } from "../serverconnection";
-    import { type ServerMessage, MessageType } from "../serverconnection";
+    import { ServerConnection } from "../routes/serverconnection";
+    import { type ServerMessage, MessageType } from "../routes/serverconnection";
+    import type { PeerInfo } from "../routes/peerconnection";
+    import { Peer } from "../routes/peer";
     import { onMount } from "svelte";
 
     let uuid: string;
     let public_uuid: string | null;
-    let name: string | null;
+    let name: string;
+    let peers: Peer[] = [];
     
     onMount(() => {
 
-        name = localStorage.getItem("name");
+        name = localStorage.getItem("name") || "";
         uuid = localStorage.getItem("uuid") || "";
         
         if (uuid === "") {
@@ -29,17 +32,24 @@
         })
 
         serverconnection.addMessageListener(MessageType.PRIVATE_UUID_REQ, (data) => {
-            console.log("Sending UUID");
-            serverconnection.send(MessageType.PRIVATE_UUID, uuid);
+            let info: PeerInfo = {
+                uuid: uuid,
+                name: name,
+            }
+            serverconnection.send(MessageType.PRIVATE_UUID, JSON.stringify(info));
         })
 
-        // serverconnection.socket?.addEventListener("open", (event) => {
-        //     let uuid_message: ServerMessage = {
-        //         type: MessageType.PRIVATE_UUID,
-        //         data: uuid,
-        //     }
-        //     serverconnection.send(uuid_message);
-        // })
+        serverconnection.addMessageListener(MessageType.SDP_OFFER_REQ, (data) => {
+            let peerInfo: PeerInfo = JSON.parse(data);
+            let peer: Peer = new Peer(peerInfo.name, peerInfo.uuid);
+            peer.connection.addEventListener("open", (event) => console.log("OPENED"));
+            peer.connection.addEventListener("close", (event) => console.log("CLOSED"));
+            peers = [ ...peers, peer ];
+        })
+
+        return () => {
+            serverconnection.close();
+        };
 
     })
 
